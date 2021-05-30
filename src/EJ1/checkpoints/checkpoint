@@ -1,2 +1,2 @@
-model_checkpoint_path: "red1_lr0.5_l20.5_f0"
-all_model_checkpoint_paths: "red1_lr0.5_l20.5_f0"
+model_checkpoint_path: "n10_b32_reluf3"
+all_model_checkpoint_paths: "n10_b32_reluf3"

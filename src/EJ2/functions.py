@@ -4,11 +4,12 @@ from tensorflow import keras
 from os.path import join
 # Sklear functions
 from sklearn.model_selection import train_test_split, KFold
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 # keras functions
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.optimizers import SGD, Adam
-from keras.callbacks import EarlyStopping, LearningRateScheduler
+from keras.callbacks import EarlyStopping, LearningRateScheduler, ModelCheckpoint, TensorBoard
 from keras.losses import MAE, MSE
 
 
@@ -29,8 +30,8 @@ def normalize(data_frame, data_to_norm=None):
     return data, norm_std
 
 def get_metrics(y, y_pred, label=''):
-    mae = MAE(y, y_pred)    
-    mse = MSE(y, y_pred)
+    mae = mean_absolute_error(y, y_pred)    
+    mse = mean_squared_error(y, y_pred)
     #print('{} MAE = {}, MSE = {}'.format(label, mae, mse))
     return mae, mse
 
@@ -51,7 +52,7 @@ def verify_model(my_model, x_train, y_train, x_validation, y_validation, train_l
 
 
 def train_model(x_dataset, y_dataset, model, name, batch, checkpoints_path, stopping_patiece=None, treat_data=None):
-    folding = KFold(n_splits=5, random_state=0)
+    folding = KFold(n_splits=5, random_state=0, shuffle=True)
     pesos_default = model.get_weights()
     folds = folding.split(x_dataset)
     mae_val = []
@@ -89,3 +90,45 @@ def train_model(x_dataset, y_dataset, model, name, batch, checkpoints_path, stop
         model.set_weights(pesos_default)
         curr += 1
     return np.mean(auc_val), results 
+
+
+def train_model_emb(x_dataset, y_dataset, model, name, batch, checkpoints_path, stopping_patiece=None, treat_data=None, cat=[], num=[]):
+    folding = KFold(n_splits=5, random_state=0, shuffle=True)
+    pesos_default = model.get_weights()
+    folds = folding.split(x_dataset)
+    mae_val = []
+    results = []
+    curr = 0
+    for train, valid in folds:
+        # Split dataset
+        x_train, x_valid = x_dataset.iloc[train], x_dataset.iloc[valid]
+        y_train, y_valid = y_dataset.iloc[train], y_dataset.iloc[valid]
+        
+        # Procesamiento de datos ??? posible normalizacion de los datos
+        x_cat_train = x_train[cat]
+        x_num_train = x_train[num]
+        x_cat_valid = x_valid[cat]
+        x_num_valid = x_valid[num]
+        
+        # Create callbacks
+        checkdir = join(checkpoints_path, name+'_f{}'.format(curr))
+        temp_callback = ModelCheckpoint(filepath=checkdir, save_weights_only=True, monitor='loss', mode='min', save_best_only=True)
+        my_callbacks = [temp_callback]
+        if stopping_patiece:
+            my_callbacks.append(EarlyStopping(monitor='loss', patience=stopping_patiece))
+        # Train model
+        history = model.fit([x_cat_train, x_num_train], y_train, 
+                            validation_data=([x_cat_valid, x_num_valid], y_valid),
+                            batch_size=batch, epochs=200,
+                            verbose=0, callbacks=my_callbacks) 
+        # Cargo el mejor modelo entrenado
+        model.load_weights(checkdir)
+        metrics = verify_model(model, 
+                               [x_cat_train, x_num_train], y_train, 
+                               [x_cat_valid, x_num_valid], y_valid)
+        mae_val.append(metrics['MAE'][1])
+        results.append(metrics)
+        # Reset model for next training
+        model.set_weights(pesos_default)
+        curr += 1
+    return np.mean(mae_val), results 

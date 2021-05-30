@@ -50,7 +50,7 @@ def verify_model(my_model, x_train, y_train, x_validation, y_validation, train_l
 
 
 
-def train_model(x_dataset, y_dataset, model, name, batch, checkpoints_path, stopping_patiece=None):
+def train_model(x_dataset, y_dataset, model, name, batch, checkpoints_path, stopping_patiece=None, treat_data=None):
     folding = KFold(n_splits=5, random_state=0)
     pesos_default = model.get_weights()
     folds = folding.split(x_dataset)
@@ -62,14 +62,20 @@ def train_model(x_dataset, y_dataset, model, name, batch, checkpoints_path, stop
         x_train, x_valid = x_dataset.iloc[train], x_dataset.iloc[valid]
         y_train, y_valid = y_dataset.iloc[train], y_dataset.iloc[valid]
         
-        # Procesamiento de datos ???
+        # Procesamiento de datos ??? posible normalizacion de los datos
+        if treat_data:
+            x_train_n, useful = treat_data(x_train, useful=None)
+            y_trian_n, useful = treat_data(y_train, useful=useful)
+        else:
+            x_train_n = x_train.copy()
+            x_valid_n = y_train.copy()
         
         # Create callbacks
-        checkdir = join(checkpoints_path, name+'f{}'.format(curr))
-        temp_callback = ModelCheckpoint(filepath=checkdir, save_weights_only=True, monitor='val_auc', mode='max', save_best_only=True)
+        checkdir = join(checkpoints_path, name+'_f{}'.format(curr))
+        temp_callback = ModelCheckpoint(filepath=checkdir, save_weights_only=True, monitor='loss', mode='min', save_best_only=True)
         my_callbacks = [temp_callback]
         if stopping_patiece:
-            my_callbacks.append(EarlyStopping(monitor='val_auc', patience=stopping_patiece))
+            my_callbacks.append(EarlyStopping(monitor='loss', patience=stopping_patiece))
         # Train model
         history = model.fit(x_train_n, y_train, validation_data=(x_valid_n, y_valid),
                             batch_size=batch, epochs=200,

@@ -1,2 +1,2 @@
-model_checkpoint_path: "mlp_state_9"
-all_model_checkpoint_paths: "mlp_state_9"
+model_checkpoint_path: "red1_lr0.5_l20.5_f0"
+all_model_checkpoint_paths: "red1_lr0.5_l20.5_f0"

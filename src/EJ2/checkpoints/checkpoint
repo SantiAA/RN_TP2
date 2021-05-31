@@ -1,2 +1,2 @@
-model_checkpoint_path: "poly_order_9b"
-all_model_checkpoint_paths: "poly_order_9b"
+model_checkpoint_path: "final"
+all_model_checkpoint_paths: "final"

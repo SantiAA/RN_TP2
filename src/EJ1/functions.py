@@ -3,7 +3,7 @@ import pandas as pd
 from tensorflow import keras
 # Sklear functions
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, auc
+from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, auc, fbeta_score
 # keras functions
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
@@ -101,3 +101,35 @@ def verify_model(my_model, x_train, y_train, x_validation, y_validation, train_l
         'Valor Predictivo Negativo': [npv_t, npv_v]
     } 
     return pd.DataFrame(data=d)
+
+
+def f2_threshold(my_model, x_train, y_train, x_validation, y_validation):
+    y_train_pred = my_model.predict(x_train)
+    y_valid_pred = my_model.predict(x_validation)
+    th = np.linspace(0, 1, 100)
+    f2score_v = []
+    f2score_t = []
+    max_f = [0, 0]
+    for t in th:
+        y_pred_t = (y_train_pred > t).astype(int)
+        y_pred_v = (y_valid_pred > t).astype(int)
+        score_t = fbeta_score(y_train, y_pred_t)
+        score_v = fbeta_score(y_valid, y_pred_v)
+        f2score_t.append(score_t)
+        f2score_v.append(score_v)
+        if score_v > max_f[0]:
+            max_f[0] = score_v
+            max_f[1] = t
+    
+    plt.plot(th, f2score_t, label='train')
+    plt.plot(th, f2score_v, label='valid')
+    
+    plt.xlabel('Threshold')
+    plt.ylabel('F2 score')
+    
+    plt.axvline(max_f[0], color='black', linestyle='--')
+    plt.xlim([0,1])
+    plt.ylim([0,1])
+    plt.grid()
+    plt.legend()
+    plt.show()

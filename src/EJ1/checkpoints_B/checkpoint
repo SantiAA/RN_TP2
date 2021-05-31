@@ -1,0 +1,2 @@
+model_checkpoint_path: "poly_l2_5"
+all_model_checkpoint_paths: "poly_l2_5"

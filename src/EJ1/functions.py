@@ -113,8 +113,8 @@ def f2_threshold(my_model, x_train, y_train, x_validation, y_validation):
     for t in th:
         y_pred_t = (y_train_pred > t).astype(int)
         y_pred_v = (y_valid_pred > t).astype(int)
-        score_t = fbeta_score(y_train, y_pred_t)
-        score_v = fbeta_score(y_valid, y_pred_v)
+        score_t = fbeta_score(y_train, y_pred_t, beta=2)
+        score_v = fbeta_score(y_valid, y_pred_v, beta=2)
         f2score_t.append(score_t)
         f2score_v.append(score_v)
         if score_v > max_f[0]:
